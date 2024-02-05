@@ -1,0 +1,30 @@
+{
+  "name": "teste",
+  "version": "1.0.0",
+  "main": "index.js",
+  "author": "jeanvcastro <jean.castro1@outlook.com>",
+  "license": "MIT",
+  "scripts": {
+    "dev": "tsx watch src/app.ts",
+    "build": "tsup src/app.ts",
+    "start": "node dist/app.js",
+    "lint": "eslint \"src/**/*.ts\"",
+    "lint:fix": "eslint \"src/**/*.ts\" --fix",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^6.4.0",
+    "eslint": "^8.0.1",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-config-standard-with-typescript": "^43.0.1",
+    "eslint-plugin-import": "^2.25.2",
+    "eslint-plugin-n": "^15.0.0 || ^16.0.0 ",
+    "eslint-plugin-promise": "^6.0.0",
+    "husky": "^9.0.10",
+    "prettier": "^3.2.5",
+    "tsup": "^8.0.1",
+    "tsx": "^4.7.0",
+    "typescript": "*"
+  }
+}
