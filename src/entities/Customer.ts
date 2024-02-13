@@ -11,14 +11,14 @@ export type CustomerProps = BaseEntityProps & {
 };
 
 export class Customer extends BaseEntity {
-  private _name: string;
+  private declare _name: string;
   private declare _document: CPF | CNPJ;
   private _email: string;
   private _phone: string;
 
   constructor(props: CustomerProps) {
     super(props);
-    this._name = props.name;
+    this.name = props.name;
     this.document = props.document;
     this._email = props.email;
     this._phone = props.phone;
@@ -29,7 +29,13 @@ export class Customer extends BaseEntity {
   }
 
   set name(value: string) {
-    this._name = value;
+    const trimmedName = value.trim();
+
+    if (/[^a-zA-Z\s]/.test(trimmedName)) {
+      throw new InvalidParameterException("Name", value);
+    }
+
+    this._name = trimmedName;
   }
 
   get document(): string {

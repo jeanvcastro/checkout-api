@@ -8,7 +8,7 @@ import { Product } from "./Product";
 import { Sale, SaleConstants } from "./Sale";
 
 const mockCustomer = new Customer({
-  name: "any_name",
+  name: "Any Name",
   email: "any@email.com",
   document: "01234567890",
   phone: "any_phone",
