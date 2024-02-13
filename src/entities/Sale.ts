@@ -1,4 +1,5 @@
 import { ExpirationRequiredException } from "@/errors/ExpirationRequiredException";
+import { TooManyPaymentAttemptsException } from "@/errors/TooManyPaymentAttemptsException";
 import { ValueNegativeException } from "@/errors/ValueNegativeException";
 import { ValueTooHighException } from "@/errors/ValueTooHighException";
 import { ValueTooLowException } from "@/errors/ValueTooLowException";
@@ -24,25 +25,28 @@ export type SaleProps = BaseEntityProps & {
   status: SaleConstants.Status;
   paymentMethod: SaleConstants.PaymentMethod;
   value: number;
+  attempts: number;
   expiration?: Date;
   customer: Customer;
   products: Product[];
 };
 
 export class Sale extends BaseEntity {
-  private declare _status: SaleConstants.Status;
-  private declare _paymentMethod: SaleConstants.PaymentMethod;
+  private _status: SaleConstants.Status;
+  private _paymentMethod: SaleConstants.PaymentMethod;
   private declare _value: number;
-  private declare _expiration?: Date;
+  private declare _attempts: number;
+  private declare _expiration: Date | null;
   private _customer: Customer;
   private _products: Product[];
 
   constructor(props: SaleProps) {
     super(props);
-    this.status = props.status;
-    this.paymentMethod = props.paymentMethod;
+    this._status = props.status;
+    this._paymentMethod = props.paymentMethod;
     this.value = props.value;
-    this.expiration = props.expiration;
+    this.attempts = props.attempts;
+    this.expiration = props.expiration ?? null;
     this._customer = props.customer;
     this._products = props.products;
   }
@@ -74,11 +78,20 @@ export class Sale extends BaseEntity {
     this._value = value;
   }
 
-  get expiration(): Date | undefined {
+  get attempts(): number | undefined {
+    return this._attempts;
+  }
+
+  set attempts(value: number) {
+    if (value > 5) throw new TooManyPaymentAttemptsException();
+    this._attempts = value;
+  }
+
+  get expiration(): Date | null {
     return this._expiration;
   }
 
-  set expiration(value: Date | undefined) {
+  set expiration(value: Date | null) {
     if (this._paymentMethod !== SaleConstants.PaymentMethod.CREDIT_CARD && !value) {
       throw new ExpirationRequiredException();
     }

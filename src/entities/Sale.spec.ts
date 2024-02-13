@@ -1,4 +1,5 @@
 import { ExpirationRequiredException } from "@/errors/ExpirationRequiredException";
+import { TooManyPaymentAttemptsException } from "@/errors/TooManyPaymentAttemptsException";
 import { ValueTooHighException } from "@/errors/ValueTooHighException";
 import { ValueTooLowException } from "@/errors/ValueTooLowException";
 import { describe, expect, it } from "vitest";
@@ -25,6 +26,7 @@ describe("Sale", () => {
     const sale = new Sale({
       status: SaleConstants.Status.APPROVED,
       paymentMethod: SaleConstants.PaymentMethod.PIX,
+      attempts: 1,
       expiration: new Date(),
       value: 5000,
       customer: mockCustomer,
@@ -41,6 +43,7 @@ describe("Sale", () => {
         new Sale({
           status: SaleConstants.Status.PENDING,
           paymentMethod: SaleConstants.PaymentMethod.BANK_SLIP,
+          attempts: 1,
           expiration: new Date(),
           value: 499,
           customer: mockCustomer,
@@ -55,6 +58,7 @@ describe("Sale", () => {
         new Sale({
           status: SaleConstants.Status.REFUSED,
           paymentMethod: SaleConstants.PaymentMethod.CREDIT_CARD,
+          attempts: 1,
           value: 500001,
           customer: mockCustomer,
           products: mockProducts,
@@ -68,10 +72,25 @@ describe("Sale", () => {
         new Sale({
           status: SaleConstants.Status.PENDING,
           paymentMethod: SaleConstants.PaymentMethod.PIX,
+          attempts: 1,
           value: 1000,
           customer: mockCustomer,
           products: mockProducts,
         }),
     ).toThrow(ExpirationRequiredException);
+  });
+
+  it("should throw TooManyPaymentAttemptsException for a number of attempts greater than 5", () => {
+    expect(
+      () =>
+        new Sale({
+          status: SaleConstants.Status.PENDING,
+          paymentMethod: SaleConstants.PaymentMethod.CREDIT_CARD,
+          attempts: 6,
+          value: 1000,
+          customer: mockCustomer,
+          products: mockProducts,
+        }),
+    ).toThrow(TooManyPaymentAttemptsException);
   });
 });
