@@ -8,12 +8,14 @@
     "dev": "tsx watch src/app.ts",
     "build": "tsup src/app.ts",
     "start": "node dist/app.js",
+    "test": "vitest run",
     "lint": "eslint \"src/**/*.ts\"",
     "lint:fix": "eslint \"src/**/*.ts\" --fix",
     "format": "prettier --write \"src/**/*.ts\"",
     "prepare": "husky"
   },
   "devDependencies": {
+    "@types/node": "^20.11.17",
     "@typescript-eslint/eslint-plugin": "^6.4.0",
     "eslint": "^8.0.1",
     "eslint-config-prettier": "^9.1.0",
@@ -25,6 +27,7 @@
     "prettier": "^3.2.5",
     "tsup": "^8.0.1",
     "tsx": "^4.7.0",
-    "typescript": "*"
+    "typescript": "*",
+    "vitest": "^1.2.2"
   }
 }
