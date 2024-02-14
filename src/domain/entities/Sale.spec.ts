@@ -1,7 +1,7 @@
-import { ExpirationRequiredException } from "@/errors/ExpirationRequiredException";
-import { TooManyPaymentAttemptsException } from "@/errors/TooManyPaymentAttemptsException";
-import { ValueTooHighException } from "@/errors/ValueTooHighException";
-import { ValueTooLowException } from "@/errors/ValueTooLowException";
+import { ExpirationRequiredException } from "@/domain/errors/ExpirationRequiredException";
+import { TooManyPaymentAttemptsException } from "@/domain/errors/TooManyPaymentAttemptsException";
+import { ValueTooHighException } from "@/domain/errors/ValueTooHighException";
+import { ValueTooLowException } from "@/domain/errors/ValueTooLowException";
 import { describe, expect, it } from "vitest";
 import { Customer } from "./Customer";
 import { Product } from "./Product";
@@ -27,6 +27,7 @@ describe("Sale", () => {
       status: SaleConstants.Status.APPROVED,
       paymentMethod: SaleConstants.PaymentMethod.PIX,
       attempts: 1,
+      gatewayTransactionId: "any_transaction_id",
       expiration: new Date(),
       value: 5000,
       customer: mockCustomer,
@@ -44,6 +45,7 @@ describe("Sale", () => {
           status: SaleConstants.Status.PENDING,
           paymentMethod: SaleConstants.PaymentMethod.BANK_SLIP,
           attempts: 1,
+          gatewayTransactionId: "any_transaction_id",
           expiration: new Date(),
           value: 499,
           customer: mockCustomer,
@@ -59,6 +61,7 @@ describe("Sale", () => {
           status: SaleConstants.Status.REFUSED,
           paymentMethod: SaleConstants.PaymentMethod.CREDIT_CARD,
           attempts: 1,
+          gatewayTransactionId: "any_transaction_id",
           value: 500001,
           customer: mockCustomer,
           products: mockProducts,
@@ -73,6 +76,7 @@ describe("Sale", () => {
           status: SaleConstants.Status.PENDING,
           paymentMethod: SaleConstants.PaymentMethod.PIX,
           attempts: 1,
+          gatewayTransactionId: "any_transaction_id",
           value: 1000,
           customer: mockCustomer,
           products: mockProducts,
@@ -87,6 +91,7 @@ describe("Sale", () => {
           status: SaleConstants.Status.PENDING,
           paymentMethod: SaleConstants.PaymentMethod.CREDIT_CARD,
           attempts: 6,
+          gatewayTransactionId: "any_transaction_id",
           value: 1000,
           customer: mockCustomer,
           products: mockProducts,
