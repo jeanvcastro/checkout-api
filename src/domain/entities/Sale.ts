@@ -4,8 +4,8 @@ import { ValueNegativeException } from "@/domain/errors/ValueNegativeException";
 import { ValueTooHighException } from "@/domain/errors/ValueTooHighException";
 import { ValueTooLowException } from "@/domain/errors/ValueTooLowException";
 import { BaseEntity, type BaseEntityProps } from "./BaseEntity";
-import { type Customer } from "./Customer";
-import { type Product } from "./Product";
+import { Customer, type CustomerProps } from "./Customer";
+import { Product, type ProductProps } from "./Product";
 
 export namespace SaleConstants {
   export enum Status {
@@ -33,8 +33,8 @@ export type SaleProps = BaseEntityProps & {
   barcode?: string | null;
   qrcode?: string | null;
   expiration?: Date | null;
-  customer: Customer;
-  products: Product[];
+  customer?: CustomerProps | null;
+  products?: ProductProps[];
 };
 
 export class Sale extends BaseEntity {
@@ -48,7 +48,7 @@ export class Sale extends BaseEntity {
   private _barcode: string | null;
   private _qrcode: string | null;
   private declare _expiration: Date | null;
-  private _customer: Customer;
+  private _customer: Customer | null;
   private _products: Product[];
 
   constructor(props: SaleProps) {
@@ -63,8 +63,8 @@ export class Sale extends BaseEntity {
     this._barcode = props.barcode ?? null;
     this._qrcode = props.qrcode ?? null;
     this.expiration = props.expiration ?? null;
-    this._customer = props.customer;
-    this._products = props.products;
+    this._customer = props.customer ? new Customer(props.customer) : null;
+    this._products = props.products?.map((product) => new Product(product)) ?? [];
   }
 
   get status(): SaleConstants.Status {
@@ -94,7 +94,7 @@ export class Sale extends BaseEntity {
     this._value = value;
   }
 
-  get attempts(): number | undefined {
+  get attempts(): number {
     return this._attempts;
   }
 
@@ -155,11 +155,11 @@ export class Sale extends BaseEntity {
     this._expiration = value;
   }
 
-  get customer(): Customer {
+  get customer(): Customer | null {
     return this._customer;
   }
 
-  set customer(value: Customer) {
+  set customer(value: Customer | null) {
     this._customer = value;
   }
 

@@ -1,6 +1,31 @@
-import { type Sale, type SaleConstants } from "@/domain/entities/Sale";
+import { type SaleConstants } from "@/domain/entities/Sale";
 
-interface PaymentResponse {
+interface PaymentProduct {
+  id: string;
+  name: string;
+  price: number;
+}
+
+export interface PaymentRequest {
+  amount: number;
+  products: PaymentProduct[];
+  customer: {
+    name: string;
+    email: string;
+    document: string;
+    phone: string;
+  };
+  expiration?: Date;
+  installments?: number;
+  creditCard?: {
+    name: string;
+    number: string;
+    expiration: string;
+    cvv: string;
+  };
+}
+
+export interface PaymentResponse {
   status: SaleConstants.Status;
   gatewayTransactionId: string;
   creditCardBrand: string | null;
@@ -11,5 +36,5 @@ interface PaymentResponse {
 }
 
 export interface PaymentStrategy {
-  processPayment: (sale: Sale) => Promise<PaymentResponse>;
+  processPayment: (data: PaymentRequest) => Promise<PaymentResponse>;
 }
