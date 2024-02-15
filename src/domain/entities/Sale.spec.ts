@@ -12,6 +12,7 @@ describe("Sale", () => {
       paymentMethod: SaleConstants.PaymentMethod.PIX,
       attempts: 1,
       gatewayTransactionId: "any_transaction_id",
+      qrcode: "any_qrcode",
       expiration: new Date(),
       value: 5000,
     });
@@ -45,6 +46,91 @@ describe("Sale", () => {
           value: 500001,
         }),
     ).toThrow(ValueTooHighException);
+  });
+
+  it("should throw RequiredParameterException for missing creditCardBrand when paymentMethod is CREDIT_CARD", () => {
+    expect(
+      () =>
+        new Sale({
+          status: SaleConstants.Status.APPROVED,
+          paymentMethod: SaleConstants.PaymentMethod.CREDIT_CARD,
+          attempts: 1,
+          gatewayTransactionId: "any_transaction_id",
+          value: 5000,
+          installments: 1,
+          installmentsValue: 5000,
+        }),
+    ).toThrow(RequiredParameterException);
+  });
+
+  // Teste para installments requerido
+  it("should throw RequiredParameterException for missing installments when paymentMethod is CREDIT_CARD", () => {
+    expect(
+      () =>
+        new Sale({
+          status: SaleConstants.Status.APPROVED,
+          paymentMethod: SaleConstants.PaymentMethod.CREDIT_CARD,
+          attempts: 1,
+          gatewayTransactionId: "any_transaction_id",
+          value: 5000,
+          creditCardBrand: "VISA",
+          installmentsValue: 5000,
+        }),
+    ).toThrow(RequiredParameterException);
+  });
+
+  it("should throw RequiredParameterException for missing installmentsValue when paymentMethod is CREDIT_CARD", () => {
+    expect(
+      () =>
+        new Sale({
+          status: SaleConstants.Status.APPROVED,
+          paymentMethod: SaleConstants.PaymentMethod.CREDIT_CARD,
+          attempts: 1,
+          gatewayTransactionId: "any_transaction_id",
+          value: 5000,
+          creditCardBrand: "VISA",
+          installments: 1,
+        }),
+    ).toThrow(RequiredParameterException);
+  });
+
+  it("should throw RequiredParameterException for missing digitableLine when paymentMethod is BANK_SLIP", () => {
+    expect(
+      () =>
+        new Sale({
+          status: SaleConstants.Status.APPROVED,
+          paymentMethod: SaleConstants.PaymentMethod.BANK_SLIP,
+          attempts: 1,
+          gatewayTransactionId: "any_transaction_id",
+          value: 5000,
+        }),
+    ).toThrow(RequiredParameterException);
+  });
+
+  it("should throw RequiredParameterException for missing barcode when paymentMethod is BANK_SLIP", () => {
+    expect(
+      () =>
+        new Sale({
+          status: SaleConstants.Status.APPROVED,
+          paymentMethod: SaleConstants.PaymentMethod.BANK_SLIP,
+          attempts: 1,
+          gatewayTransactionId: "any_transaction_id",
+          value: 5000,
+        }),
+    ).toThrow(RequiredParameterException);
+  });
+
+  it("should throw RequiredParameterException for missing qrcode when paymentMethod is PIX", () => {
+    expect(
+      () =>
+        new Sale({
+          status: SaleConstants.Status.APPROVED,
+          paymentMethod: SaleConstants.PaymentMethod.PIX,
+          attempts: 1,
+          gatewayTransactionId: "any_transaction_id",
+          value: 5000,
+        }),
+    ).toThrow(RequiredParameterException);
   });
 
   it("should require expiration for non-credit card payment methods", () => {

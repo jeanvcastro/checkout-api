@@ -1,4 +1,5 @@
 import { AntiFraudRuleViolationException } from "@/app/errors/AntiFraudRuleViolationException";
+import { InvalidInstallmentsException } from "@/app/errors/InvalidInstallmentsException";
 import { InvalidPaymentMethodException } from "@/app/errors/InvalidPaymentMethodException";
 import { BankSlipStrategy } from "@/app/services/payments/BankSlipStrategy";
 import { CreditCardStrategy } from "@/app/services/payments/CreditCardStrategy";
@@ -9,7 +10,9 @@ import { type SalesRepository } from "@/domain/data/repositories/SalesRepository
 import { Customer } from "@/domain/entities/Customer";
 import { type Product } from "@/domain/entities/Product";
 import { Sale, SaleConstants } from "@/domain/entities/Sale";
+import { RequiredParameterException } from "@/domain/errors/RequiredParameterException";
 import { type PaymentRequest, type PaymentResponse, type PaymentStrategy } from "@/domain/services/PaymentStrategy";
+import { InstallmentCalculator } from "@/domain/valueObjects/InstallmentCalculator";
 import { type ProcessPaymentInput } from "./ProcessPaymentInput";
 import { type ProcessPaymentOutput } from "./ProcessPaymentOutput";
 
@@ -17,7 +20,7 @@ export class ProcessPaymentUseCase {
   private declare customer: Customer;
   private declare products: Product[];
   private declare sale: Sale;
-  private declare readonly paymentRequest: PaymentRequest;
+  private declare paymentRequest: PaymentRequest;
   private declare paymentStrategy: PaymentStrategy;
   private declare paymentResponse: PaymentResponse;
 
@@ -102,12 +105,13 @@ export class ProcessPaymentUseCase {
   }
 
   private async processPayment(input: ProcessPaymentInput): Promise<void> {
-    const amount = this.products.reduce((acc, product) => acc + product.price, 0);
     const products = this.products.map((product) => ({
       id: product.uuid.toString(),
       name: product.name,
       price: product.price,
     }));
+
+    const amount = this.products.reduce((acc, product) => acc + product.price, 0);
 
     const paymentRequest: PaymentRequest = {
       amount,
@@ -121,6 +125,23 @@ export class ProcessPaymentUseCase {
     };
 
     if (input.paymentMethod === SaleConstants.PaymentMethod.CREDIT_CARD) {
+      if (!input.installments) {
+        throw new RequiredParameterException("Installments");
+      }
+      if (!input.creditCard) {
+        throw new RequiredParameterException("CreditCard");
+      }
+
+      const availableInstallments = new InstallmentCalculator(amount, input.installments).result;
+      const selectedInstallment = availableInstallments.find(
+        (installment) => installment.number === input.installments,
+      );
+
+      if (!selectedInstallment) {
+        throw new InvalidInstallmentsException();
+      }
+
+      paymentRequest.amount = selectedInstallment.value * selectedInstallment.number;
       paymentRequest.creditCard = input.creditCard;
       paymentRequest.installments = input.installments;
     }
@@ -133,6 +154,7 @@ export class ProcessPaymentUseCase {
       paymentRequest.expiration = new Date(Date.now() + 15 * 60 * 1000);
     }
 
+    this.paymentRequest = paymentRequest;
     this.paymentResponse = await this.paymentStrategy.processPayment(paymentRequest);
   }
 

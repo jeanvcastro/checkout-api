@@ -1,6 +1,7 @@
 export class InvalidPaymentMethodException extends Error {
   constructor() {
-    super("Invalid payment method");
+    super();
+    this.message = "Invalid payment method";
     this.name = "InvalidPaymentMethodException";
   }
 }

@@ -27,7 +27,7 @@ export type SaleProps = BaseEntityProps & {
   paymentMethod: SaleConstants.PaymentMethod;
   value: number;
   attempts: number;
-  gatewayTransactionId: string | null;
+  gatewayTransactionId: string;
   creditCardBrand?: string | null;
   installments?: number;
   installmentsValue?: number;
@@ -44,7 +44,7 @@ export class Sale extends BaseEntity {
   private _paymentMethod: SaleConstants.PaymentMethod;
   private declare _value: number;
   private declare _attempts: number;
-  private declare _gatewayTransactionId: string | null;
+  private declare _gatewayTransactionId: string;
   private declare _creditCardBrand: string | null;
   private declare _installments: number | null;
   private declare _installmentsValue: number | null;
@@ -109,11 +109,11 @@ export class Sale extends BaseEntity {
     this._attempts = value;
   }
 
-  get gatewayTransactionId(): string | null {
+  get gatewayTransactionId(): string {
     return this._gatewayTransactionId;
   }
 
-  set gatewayTransactionId(value: string | null) {
+  set gatewayTransactionId(value: string) {
     this._gatewayTransactionId = value;
   }
 
