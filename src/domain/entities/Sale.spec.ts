@@ -1,25 +1,9 @@
-import { ExpirationRequiredException } from "@/domain/errors/ExpirationRequiredException";
+import { RequiredParameterException } from "@/domain/errors/RequiredParameterException";
 import { TooManyPaymentAttemptsException } from "@/domain/errors/TooManyPaymentAttemptsException";
 import { ValueTooHighException } from "@/domain/errors/ValueTooHighException";
 import { ValueTooLowException } from "@/domain/errors/ValueTooLowException";
 import { describe, expect, it } from "vitest";
-import { Customer } from "./Customer";
-import { Product } from "./Product";
 import { Sale, SaleConstants } from "./Sale";
-
-const mockCustomer = new Customer({
-  name: "Any Name",
-  email: "any@email.com",
-  document: "01234567890",
-  phone: "any_phone",
-});
-
-const mockProduct = new Product({
-  name: "any_name",
-  price: 1000,
-});
-
-const mockProducts = [mockProduct];
 
 describe("Sale", () => {
   it("should create a Sale instance with valid data", () => {
@@ -30,8 +14,6 @@ describe("Sale", () => {
       gatewayTransactionId: "any_transaction_id",
       expiration: new Date(),
       value: 5000,
-      customer: mockCustomer,
-      products: mockProducts,
     });
     expect(sale.status).toBe(SaleConstants.Status.APPROVED);
     expect(sale.paymentMethod).toBe(SaleConstants.PaymentMethod.PIX);
@@ -48,8 +30,6 @@ describe("Sale", () => {
           gatewayTransactionId: "any_transaction_id",
           expiration: new Date(),
           value: 499,
-          customer: mockCustomer,
-          products: mockProducts,
         }),
     ).toThrow(ValueTooLowException);
   });
@@ -63,8 +43,6 @@ describe("Sale", () => {
           attempts: 1,
           gatewayTransactionId: "any_transaction_id",
           value: 500001,
-          customer: mockCustomer,
-          products: mockProducts,
         }),
     ).toThrow(ValueTooHighException);
   });
@@ -78,10 +56,8 @@ describe("Sale", () => {
           attempts: 1,
           gatewayTransactionId: "any_transaction_id",
           value: 1000,
-          customer: mockCustomer,
-          products: mockProducts,
         }),
-    ).toThrow(ExpirationRequiredException);
+    ).toThrow(RequiredParameterException);
   });
 
   it("should throw TooManyPaymentAttemptsException for a number of attempts greater than 5", () => {
@@ -93,8 +69,6 @@ describe("Sale", () => {
           attempts: 6,
           gatewayTransactionId: "any_transaction_id",
           value: 1000,
-          customer: mockCustomer,
-          products: mockProducts,
         }),
     ).toThrow(TooManyPaymentAttemptsException);
   });

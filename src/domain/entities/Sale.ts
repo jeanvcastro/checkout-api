@@ -1,4 +1,4 @@
-import { ExpirationRequiredException } from "@/domain/errors/ExpirationRequiredException";
+import { RequiredParameterException } from "@/domain/errors/RequiredParameterException";
 import { TooManyPaymentAttemptsException } from "@/domain/errors/TooManyPaymentAttemptsException";
 import { ValueNegativeException } from "@/domain/errors/ValueNegativeException";
 import { ValueTooHighException } from "@/domain/errors/ValueTooHighException";
@@ -29,6 +29,8 @@ export type SaleProps = BaseEntityProps & {
   attempts: number;
   gatewayTransactionId: string | null;
   creditCardBrand?: string | null;
+  installments?: number;
+  installmentsValue?: number;
   digitableLine?: string | null;
   barcode?: string | null;
   qrcode?: string | null;
@@ -42,11 +44,13 @@ export class Sale extends BaseEntity {
   private _paymentMethod: SaleConstants.PaymentMethod;
   private declare _value: number;
   private declare _attempts: number;
-  private _gatewayTransactionId: string | null;
-  private _creditCardBrand: string | null;
-  private _digitableLine: string | null;
-  private _barcode: string | null;
-  private _qrcode: string | null;
+  private declare _gatewayTransactionId: string | null;
+  private declare _creditCardBrand: string | null;
+  private declare _installments: number | null;
+  private declare _installmentsValue: number | null;
+  private declare _digitableLine: string | null;
+  private declare _barcode: string | null;
+  private declare _qrcode: string | null;
   private declare _expiration: Date | null;
   private _customer: Customer | null;
   private _products: Product[];
@@ -57,11 +61,13 @@ export class Sale extends BaseEntity {
     this._paymentMethod = props.paymentMethod;
     this.value = props.value;
     this.attempts = props.attempts;
-    this._gatewayTransactionId = props.gatewayTransactionId ?? null;
-    this._creditCardBrand = props.creditCardBrand ?? null;
-    this._digitableLine = props.digitableLine ?? null;
-    this._barcode = props.barcode ?? null;
-    this._qrcode = props.qrcode ?? null;
+    this._gatewayTransactionId = props.gatewayTransactionId;
+    this.creditCardBrand = props.creditCardBrand ?? null;
+    this.installments = props.installments ?? null;
+    this.installmentsValue = props.installmentsValue ?? null;
+    this.digitableLine = props.digitableLine ?? null;
+    this.barcode = props.barcode ?? null;
+    this.qrcode = props.qrcode ?? null;
     this.expiration = props.expiration ?? null;
     this._customer = props.customer ? new Customer(props.customer) : null;
     this._products = props.products?.map((product) => new Product(product)) ?? [];
@@ -116,7 +122,35 @@ export class Sale extends BaseEntity {
   }
 
   set creditCardBrand(value: string | null) {
+    if (this._paymentMethod === SaleConstants.PaymentMethod.CREDIT_CARD && !value) {
+      throw new RequiredParameterException("CreditCardBrand");
+    }
+
     this._creditCardBrand = value;
+  }
+
+  get installments(): number | null {
+    return this._installments;
+  }
+
+  set installments(value: number | null) {
+    if (this._paymentMethod === SaleConstants.PaymentMethod.CREDIT_CARD && !value) {
+      throw new RequiredParameterException("Installments");
+    }
+
+    this._installments = value;
+  }
+
+  get installmentsValue(): number | null {
+    return this._installmentsValue;
+  }
+
+  set installmentsValue(value: number | null) {
+    if (this._paymentMethod === SaleConstants.PaymentMethod.CREDIT_CARD && !value) {
+      throw new RequiredParameterException("InstallmentsValue");
+    }
+
+    this._installmentsValue = value;
   }
 
   get digitableLine(): string | null {
@@ -124,6 +158,10 @@ export class Sale extends BaseEntity {
   }
 
   set digitableLine(value: string | null) {
+    if (this._paymentMethod === SaleConstants.PaymentMethod.BANK_SLIP && !value) {
+      throw new RequiredParameterException("DigitableLine");
+    }
+
     this._digitableLine = value;
   }
 
@@ -132,6 +170,10 @@ export class Sale extends BaseEntity {
   }
 
   set barcode(value: string | null) {
+    if (this._paymentMethod === SaleConstants.PaymentMethod.BANK_SLIP && !value) {
+      throw new RequiredParameterException("Barcode");
+    }
+
     this._barcode = value;
   }
 
@@ -140,6 +182,10 @@ export class Sale extends BaseEntity {
   }
 
   set qrcode(value: string | null) {
+    if (this._paymentMethod === SaleConstants.PaymentMethod.PIX && !value) {
+      throw new RequiredParameterException("QRCode");
+    }
+
     this._qrcode = value;
   }
 
@@ -149,7 +195,7 @@ export class Sale extends BaseEntity {
 
   set expiration(value: Date | null) {
     if (this._paymentMethod !== SaleConstants.PaymentMethod.CREDIT_CARD && !value) {
-      throw new ExpirationRequiredException();
+      throw new RequiredParameterException("Expiration");
     }
 
     this._expiration = value;

@@ -152,6 +152,7 @@ export class ProcessPaymentUseCase {
         paymentMethod: input.paymentMethod,
         value: this.paymentRequest.amount,
         attempts: 1,
+        installments: input.installments,
         gatewayTransactionId: this.paymentResponse.gatewayTransactionId,
         creditCardBrand: this.paymentResponse.creditCardBrand,
         digitableLine: this.paymentResponse.digitableLine,
