@@ -16,21 +16,43 @@ import { InstallmentCalculator } from "@/domain/valueObjects/InstallmentCalculat
 import { type ProcessPaymentInput } from "./ProcessPaymentInput";
 import { type ProcessPaymentOutput } from "./ProcessPaymentOutput";
 
-export class ProcessPaymentUseCase {
-  private declare customer: Customer;
-  private declare products: Product[];
-  private declare sale: Sale;
-  private declare paymentRequest: PaymentRequest;
-  private declare paymentStrategy: PaymentStrategy;
-  private declare paymentResponse: PaymentResponse;
+interface Context {
+  customer: Customer;
+  products: Product[];
+  sale: Sale;
+  paymentRequest: PaymentRequest;
+  paymentStrategy: PaymentStrategy;
+  paymentResponse: PaymentResponse;
+  input: ProcessPaymentInput;
+}
 
-  constructor(
-    private readonly customersRepository: CustomersRepository,
-    private readonly productsRepository: ProductsRepository,
-    private readonly salesRepository: SalesRepository,
-  ) {}
+export abstract class AbstractHandler {
+  private nextHandler: AbstractHandler | null = null;
 
-  private async verifyAntifraudRules(input: ProcessPaymentInput): Promise<void> {
+  public setNext(handler: AbstractHandler): AbstractHandler {
+    this.nextHandler = handler;
+    return handler;
+  }
+
+  public async handle(context: Context | Partial<Context>): Promise<void> {
+    if (this.nextHandler) {
+      await this.nextHandler.handle(context);
+    }
+  }
+}
+
+export class VerifyAntifraudRulesHandler extends AbstractHandler {
+  constructor(private readonly customersRepository: CustomersRepository) {
+    super();
+  }
+
+  async handle(context: Partial<Context>): Promise<void> {
+    const { input } = context;
+
+    if (!input) {
+      throw new RequiredParameterException("input");
+    }
+
     const { name, document, email, phone } = input.customer;
 
     const nameCount = await this.customersRepository.countCustomersByNameInPeriod(name, 24);
@@ -52,9 +74,18 @@ export class ProcessPaymentUseCase {
     if (phoneCount > 5) {
       throw new AntiFraudRuleViolationException();
     }
+
+    await super.handle(context);
+  }
+}
+
+export class SetCustomerHandler extends AbstractHandler {
+  constructor(private readonly customersRepository: CustomersRepository) {
+    super();
   }
 
-  private async setCustomer(input: ProcessPaymentInput): Promise<void> {
+  async handle(context: Context): Promise<void> {
+    const { input } = context;
     const { name, document, email, phone } = input.customer;
 
     let customer = await this.customersRepository.findByDocument(document);
@@ -73,54 +104,73 @@ export class ProcessPaymentUseCase {
         email,
         phone,
       });
-      await this.customersRepository.create(this.customer);
+      await this.customersRepository.create(customer);
     }
 
-    this.customer = customer;
+    context.customer = customer;
+
+    await super.handle(context);
+  }
+}
+
+export class SetProductsHandler extends AbstractHandler {
+  constructor(private readonly productsRepository: ProductsRepository) {
+    super();
   }
 
-  private async setProducts(input: ProcessPaymentInput): Promise<void> {
+  async handle(context: Context): Promise<void> {
+    const { input } = context;
     const productsPromises = input.products.map(
       async (productUuid) => await this.productsRepository.findByUuid(productUuid),
     );
-    this.products = await Promise.all(productsPromises);
-  }
+    context.products = await Promise.all(productsPromises);
 
-  private setPaymentStrategy(input: ProcessPaymentInput): void {
+    await super.handle(context);
+  }
+}
+
+export class SetPaymentStrategyHandler extends AbstractHandler {
+  async handle(context: Context): Promise<void> {
+    const { input } = context;
     const { paymentMethod } = input;
 
     switch (paymentMethod) {
       case SaleConstants.PaymentMethod.CREDIT_CARD:
-        this.paymentStrategy = new CreditCardStrategy();
+        context.paymentStrategy = new CreditCardStrategy();
         break;
       case SaleConstants.PaymentMethod.BANK_SLIP:
-        this.paymentStrategy = new BankSlipStrategy();
+        context.paymentStrategy = new BankSlipStrategy();
         break;
       case SaleConstants.PaymentMethod.PIX:
-        this.paymentStrategy = new PixStrategy();
+        context.paymentStrategy = new PixStrategy();
         break;
       default:
         throw new InvalidPaymentMethodException();
     }
-  }
 
-  private async processPayment(input: ProcessPaymentInput): Promise<void> {
-    const products = this.products.map((product) => ({
+    await super.handle(context);
+  }
+}
+
+export class ProcessPaymentHandler extends AbstractHandler {
+  async handle(context: Context): Promise<void> {
+    const { input, customer, products, paymentStrategy } = context;
+    const paymentRequestProducts = products.map((product) => ({
       id: product.uuid.toString(),
       name: product.name,
       price: product.price,
     }));
 
-    const amount = this.products.reduce((acc, product) => acc + product.price, 0);
+    const amount = products.reduce((acc, product) => acc + product.price, 0);
 
     const paymentRequest: PaymentRequest = {
       amount,
-      products,
+      products: paymentRequestProducts,
       customer: {
-        name: this.customer.name,
-        email: this.customer.email,
-        document: this.customer.document,
-        phone: this.customer.phone,
+        name: customer.name,
+        email: customer.email,
+        document: customer.document,
+        phone: customer.phone,
       },
     };
 
@@ -154,14 +204,23 @@ export class ProcessPaymentUseCase {
       paymentRequest.expiration = new Date(Date.now() + 15 * 60 * 1000);
     }
 
-    this.paymentRequest = paymentRequest;
-    this.paymentResponse = await this.paymentStrategy.processPayment(paymentRequest);
+    context.paymentRequest = paymentRequest;
+    context.paymentResponse = await paymentStrategy.processPayment(paymentRequest);
+
+    await super.handle(context);
+  }
+}
+
+export class SetSaleHandler extends AbstractHandler {
+  constructor(private readonly salesRepository: SalesRepository) {
+    super();
   }
 
-  async setSale(input: ProcessPaymentInput): Promise<void> {
-    const productsUuids = this.products.map((product) => product.uuid.toString());
+  async handle(context: Context): Promise<void> {
+    const { input, customer, products, paymentResponse } = context;
+    const productsUuids = products.map((product) => product.uuid.toString());
 
-    let sale = await this.salesRepository.findByProductsAndCustomer(productsUuids, this.customer.document);
+    let sale = await this.salesRepository.findByProductsAndCustomer(productsUuids, customer.document);
 
     if (sale) {
       sale.attempts++;
@@ -170,48 +229,64 @@ export class ProcessPaymentUseCase {
 
     if (!sale) {
       sale = new Sale({
-        status: this.paymentResponse.status,
+        status: paymentResponse.status,
         paymentMethod: input.paymentMethod,
-        value: this.paymentRequest.amount,
+        value: context.paymentRequest.amount,
         attempts: 1,
-        installments: input.installments,
-        gatewayTransactionId: this.paymentResponse.gatewayTransactionId,
-        creditCardBrand: this.paymentResponse.creditCardBrand,
-        digitableLine: this.paymentResponse.digitableLine,
-        barcode: this.paymentResponse.barcode,
-        qrcode: this.paymentResponse.qrcode,
-        expiration: this.paymentResponse.expiration,
+        gatewayTransactionId: paymentResponse.gatewayTransactionId,
+        creditCardBrand: paymentResponse.creditCardBrand,
+        digitableLine: paymentResponse.digitableLine,
+        barcode: paymentResponse.barcode,
+        qrcode: paymentResponse.qrcode,
+        expiration: paymentResponse.expiration,
       });
 
       await this.salesRepository.create(sale);
     }
 
-    this.sale = sale;
-  }
+    context.sale = sale;
 
-  async sendNotification(): Promise<void> {
-    // TODO: Send notification to customer
+    await super.handle(context);
   }
+}
+
+export class SendNotificationHandler extends AbstractHandler {
+  async handle(context: Context): Promise<void> {
+    await super.handle(context);
+  }
+}
+export class ProcessPaymentUseCase {
+  constructor(
+    private readonly customersRepository: CustomersRepository,
+    private readonly productsRepository: ProductsRepository,
+    private readonly salesRepository: SalesRepository,
+  ) {}
 
   async execute(input: ProcessPaymentInput): Promise<ProcessPaymentOutput> {
-    try {
-      await this.verifyAntifraudRules(input);
-      await this.setCustomer(input);
-      await this.setProducts(input);
-      this.setPaymentStrategy(input);
-      await this.processPayment(input);
-      await this.setSale(input);
-      await this.sendNotification();
+    const context: Partial<Context> = {
+      input,
+    };
 
-      return {
-        status: "success",
-        saleUuid: this.sale.uuid.toString(),
-      };
-    } catch (error: any) {
-      return {
-        status: "failure",
-        message: error?.message ?? "Internal server error",
-      };
-    }
+    const verifyAntifraudRulesHandler = new VerifyAntifraudRulesHandler(this.customersRepository);
+    const setCustomerHandler = new SetCustomerHandler(this.customersRepository);
+    const setProductsHandler = new SetProductsHandler(this.productsRepository);
+    const setPaymentStrategyHandler = new SetPaymentStrategyHandler();
+    const processPaymentHandler = new ProcessPaymentHandler();
+    const setSaleHandler = new SetSaleHandler(this.salesRepository);
+    const sendNotificationHandler = new SendNotificationHandler();
+
+    verifyAntifraudRulesHandler.setNext(setCustomerHandler);
+    setCustomerHandler.setNext(setProductsHandler);
+    setProductsHandler.setNext(setPaymentStrategyHandler);
+    setPaymentStrategyHandler.setNext(processPaymentHandler);
+    processPaymentHandler.setNext(setSaleHandler);
+    setSaleHandler.setNext(sendNotificationHandler);
+
+    await verifyAntifraudRulesHandler.handle(context);
+
+    return {
+      status: "success",
+      saleUuid: (context as Context).sale.uuid.toString(),
+    };
   }
 }
