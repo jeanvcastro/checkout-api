@@ -1,6 +1,7 @@
 export class RequiredParameterException extends Error {
   constructor(paramName: string) {
-    super(`${paramName} is required for non-credit card payments.`);
+    super();
+    this.message = `${paramName} is required.`;
     this.name = "RequiredParameterException";
   }
 }
