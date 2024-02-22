@@ -11,17 +11,14 @@ export type CustomerProps = BaseEntityProps & {
 };
 
 export class Customer extends BaseEntity {
-  private declare _name: string;
-  private declare _document: CPF | CNPJ;
-  private _email: string;
-  private _phone: string;
+  private _name: string = "";
+  private _document: string = "";
+  private _email: string = "";
+  private _phone: string = "";
 
   constructor(props: CustomerProps) {
-    super(props);
-    this.name = props.name;
-    this.document = props.document;
-    this._email = props.email;
-    this._phone = props.phone;
+    super();
+    this.fillProps(props);
   }
 
   get name(): string {
@@ -39,15 +36,15 @@ export class Customer extends BaseEntity {
   }
 
   get document(): string {
-    return this._document.value;
+    return this._document;
   }
 
   set document(value: string) {
     const cleanDocument = value.replace(/\D/g, "");
     if (cleanDocument.length === 11) {
-      this._document = new CPF(cleanDocument);
+      this._document = new CPF(cleanDocument).value;
     } else if (cleanDocument.length === 14) {
-      this._document = new CNPJ(cleanDocument);
+      this._document = new CNPJ(cleanDocument).value;
     } else {
       throw new InvalidParameterException("Document", value);
     }

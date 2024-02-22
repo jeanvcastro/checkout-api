@@ -9,13 +9,12 @@ export type ProductProps = BaseEntityProps & {
 };
 
 export class Product extends BaseEntity {
-  private _name: string;
+  private _name: string = "";
   private _price: number = 0;
 
   constructor(props: ProductProps) {
-    super(props);
-    this._name = props.name;
-    this.price = props.price;
+    super();
+    this.fillProps(props);
   }
 
   get name(): string {

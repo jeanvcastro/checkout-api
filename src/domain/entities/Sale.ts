@@ -4,8 +4,8 @@ import { ValueNegativeException } from "@/domain/errors/ValueNegativeException";
 import { ValueTooHighException } from "@/domain/errors/ValueTooHighException";
 import { ValueTooLowException } from "@/domain/errors/ValueTooLowException";
 import { BaseEntity, type BaseEntityProps } from "./BaseEntity";
-import { Customer, type CustomerProps } from "./Customer";
-import { Product, type ProductProps } from "./Product";
+import { type Customer } from "./Customer";
+import { type Product } from "./Product";
 
 export namespace SaleConstants {
   export enum Status {
@@ -35,42 +35,29 @@ export type SaleProps = BaseEntityProps & {
   barcode?: string | null;
   qrcode?: string | null;
   expiration?: Date | null;
-  customer?: CustomerProps | null;
-  products?: ProductProps[];
+  customer?: Customer | null;
+  products?: Product[];
 };
 
 export class Sale extends BaseEntity {
-  private _status: SaleConstants.Status;
-  private _paymentMethod: SaleConstants.PaymentMethod;
-  private declare _value: number;
-  private declare _attempts: number;
-  private declare _gatewayTransactionId: string;
-  private declare _creditCardBrand: string | null;
-  private declare _installments: number | null;
-  private declare _installmentsValue: number | null;
-  private declare _digitableLine: string | null;
-  private declare _barcode: string | null;
-  private declare _qrcode: string | null;
-  private declare _expiration: Date | null;
-  private _customer: Customer | null;
-  private _products: Product[];
+  private _status: SaleConstants.Status = SaleConstants.Status.INITIATED;
+  private _paymentMethod: SaleConstants.PaymentMethod = SaleConstants.PaymentMethod.CREDIT_CARD;
+  private _value: number = 0;
+  private _attempts: number = 0;
+  private _gatewayTransactionId: string = "";
+  private _creditCardBrand: string | null = null;
+  private _installments: number | null = null;
+  private _installmentsValue: number | null = null;
+  private _digitableLine: string | null = null;
+  private _barcode: string | null = null;
+  private _qrcode: string | null = null;
+  private _expiration: Date | null = null;
+  private _customer: Customer | null = null;
+  private _products: Product[] = [];
 
   constructor(props: SaleProps) {
-    super(props);
-    this._status = props.status;
-    this._paymentMethod = props.paymentMethod;
-    this.value = props.value;
-    this.attempts = props.attempts;
-    this._gatewayTransactionId = props.gatewayTransactionId;
-    this.creditCardBrand = props.creditCardBrand ?? null;
-    this.installments = props.installments ?? null;
-    this.installmentsValue = props.installmentsValue ?? null;
-    this.digitableLine = props.digitableLine ?? null;
-    this.barcode = props.barcode ?? null;
-    this.qrcode = props.qrcode ?? null;
-    this.expiration = props.expiration ?? null;
-    this._customer = props.customer ? new Customer(props.customer) : null;
-    this._products = props.products?.map((product) => new Product(product)) ?? [];
+    super();
+    this.fillProps(props);
   }
 
   get status(): SaleConstants.Status {

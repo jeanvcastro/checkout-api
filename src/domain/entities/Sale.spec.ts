@@ -133,7 +133,7 @@ describe("Sale", () => {
     ).toThrow(RequiredParameterException);
   });
 
-  it("should require expiration for non-credit card payment methods", () => {
+  it("should throw RequiredParameterException for missing expiration when paymentMethod is non-credit card", () => {
     expect(
       () =>
         new Sale({
