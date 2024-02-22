@@ -1,6 +1,8 @@
 import { type CustomersRepository } from "@/domain/data/repositories/CustomersRepository";
 import { type ProductsRepository } from "@/domain/data/repositories/ProductsRepository";
 import { type SalesRepository } from "@/domain/data/repositories/SalesRepository";
+import { type Context } from "@/domain/services/payments/PaymentHandler";
+import { type PaymentStrategyContext } from "@/domain/services/payments/PaymentStrategy";
 import {
   ProcessPaymentHandler,
   SendNotificationHandler,
@@ -8,11 +10,9 @@ import {
   SetProductsHandler,
   SetSaleHandler,
   VerifyAntifraudRulesHandler,
-  type Context,
 } from "./ProcessPaymentHandlers";
 import { type ProcessPaymentInput } from "./ProcessPaymentInput";
 import { type ProcessPaymentOutput } from "./ProcessPaymentOutput";
-import { type PaymentStrategyContext } from "./ProcessPaymentStrategyContext";
 
 export class ProcessPaymentUseCase {
   constructor(

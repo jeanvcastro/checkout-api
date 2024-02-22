@@ -4,40 +4,13 @@ import { type CustomersRepository } from "@/domain/data/repositories/CustomersRe
 import { type ProductsRepository } from "@/domain/data/repositories/ProductsRepository";
 import { type SalesRepository } from "@/domain/data/repositories/SalesRepository";
 import { Customer } from "@/domain/entities/Customer";
-import { type Product } from "@/domain/entities/Product";
 import { Sale, SaleConstants } from "@/domain/entities/Sale";
 import { RequiredParameterException } from "@/domain/errors/RequiredParameterException";
-import { type PaymentRequest, type PaymentResponse } from "@/domain/services/PaymentStrategy";
-import { InstallmentCalculator, type Installment } from "@/domain/valueObjects/InstallmentCalculator";
-import { type ProcessPaymentInput } from "./ProcessPaymentInput";
-import { type PaymentStrategyContext } from "./ProcessPaymentStrategyContext";
+import { PaymentHandler, type Context } from "@/domain/services/payments/PaymentHandler";
+import { type PaymentRequest, type PaymentStrategyContext } from "@/domain/services/payments/PaymentStrategy";
+import { InstallmentCalculator } from "@/domain/valueObjects/InstallmentCalculator";
 
-export interface Context {
-  customer: Customer;
-  products: Product[];
-  sale: Sale;
-  installment: Installment | undefined;
-  paymentRequest: PaymentRequest;
-  paymentResponse: PaymentResponse;
-  input: ProcessPaymentInput;
-}
-
-export abstract class AbstractHandler {
-  private nextHandler: AbstractHandler | null = null;
-
-  public setNext(handler: AbstractHandler): AbstractHandler {
-    this.nextHandler = handler;
-    return handler;
-  }
-
-  public async handle(context: Context | Partial<Context>): Promise<void> {
-    if (this.nextHandler) {
-      await this.nextHandler.handle(context);
-    }
-  }
-}
-
-export class VerifyAntifraudRulesHandler extends AbstractHandler {
+export class VerifyAntifraudRulesHandler extends PaymentHandler {
   constructor(private readonly customersRepository: CustomersRepository) {
     super();
   }
@@ -75,7 +48,7 @@ export class VerifyAntifraudRulesHandler extends AbstractHandler {
   }
 }
 
-export class SetCustomerHandler extends AbstractHandler {
+export class SetCustomerHandler extends PaymentHandler {
   constructor(private readonly customersRepository: CustomersRepository) {
     super();
   }
@@ -109,7 +82,7 @@ export class SetCustomerHandler extends AbstractHandler {
   }
 }
 
-export class SetProductsHandler extends AbstractHandler {
+export class SetProductsHandler extends PaymentHandler {
   constructor(private readonly productsRepository: ProductsRepository) {
     super();
   }
@@ -125,7 +98,7 @@ export class SetProductsHandler extends AbstractHandler {
   }
 }
 
-export class ProcessPaymentHandler extends AbstractHandler {
+export class ProcessPaymentHandler extends PaymentHandler {
   constructor(private readonly paymentStrategyContext: PaymentStrategyContext) {
     super();
   }
@@ -190,7 +163,7 @@ export class ProcessPaymentHandler extends AbstractHandler {
   }
 }
 
-export class SetSaleHandler extends AbstractHandler {
+export class SetSaleHandler extends PaymentHandler {
   constructor(private readonly salesRepository: SalesRepository) {
     super();
   }
@@ -231,7 +204,7 @@ export class SetSaleHandler extends AbstractHandler {
   }
 }
 
-export class SendNotificationHandler extends AbstractHandler {
+export class SendNotificationHandler extends PaymentHandler {
   async handle(context: Context): Promise<void> {
     await super.handle(context);
   }

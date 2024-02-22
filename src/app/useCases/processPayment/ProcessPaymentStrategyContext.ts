@@ -4,12 +4,12 @@ import { CreditCardStrategy } from "@/app/services/payments/CreditCardStrategy";
 import { PixStrategy } from "@/app/services/payments/PixStrategy";
 import { SaleConstants } from "@/domain/entities/Sale";
 import { UndefinedPaymentStrategyException } from "@/domain/errors/UndefinedPaymentStrategyException";
-import { type PaymentRequest, type PaymentResponse, type PaymentStrategy } from "@/domain/services/PaymentStrategy";
-
-export interface PaymentStrategyContext {
-  setStrategy: (paymentMethod: SaleConstants.PaymentMethod) => void;
-  processPayment: (data: PaymentRequest) => Promise<PaymentResponse>;
-}
+import {
+  type PaymentRequest,
+  type PaymentResponse,
+  type PaymentStrategy,
+  type PaymentStrategyContext,
+} from "@/domain/services/payments/PaymentStrategy";
 
 export class ProcessPaymentStrategyContext implements PaymentStrategyContext {
   private strategy?: PaymentStrategy;

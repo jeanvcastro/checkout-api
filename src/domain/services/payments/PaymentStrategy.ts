@@ -35,6 +35,11 @@ export interface PaymentResponse {
   expiration: Date | null;
 }
 
+export interface PaymentStrategyContext {
+  setStrategy: (paymentMethod: SaleConstants.PaymentMethod) => void;
+  processPayment: (data: PaymentRequest) => Promise<PaymentResponse>;
+}
+
 export interface PaymentStrategy {
   processPayment: (data: PaymentRequest) => Promise<PaymentResponse>;
 }

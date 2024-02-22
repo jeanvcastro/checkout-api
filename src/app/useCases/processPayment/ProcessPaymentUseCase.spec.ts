@@ -3,11 +3,10 @@ import { type ProductsRepository } from "@/domain/data/repositories/ProductsRepo
 import { type SalesRepository } from "@/domain/data/repositories/SalesRepository";
 import { Product } from "@/domain/entities/Product";
 import { SaleConstants } from "@/domain/entities/Sale";
-import { type PaymentResponse } from "@/domain/services/PaymentStrategy";
+import { type PaymentResponse, type PaymentStrategyContext } from "@/domain/services/payments/PaymentStrategy";
 import { UUID } from "@/domain/valueObjects/UUID";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { type ProcessPaymentInput } from "./ProcessPaymentInput";
-import { type PaymentStrategyContext } from "./ProcessPaymentStrategyContext";
 import { ProcessPaymentUseCase } from "./ProcessPaymentUseCase";
 
 describe("ProcessPaymentUseCase", () => {
