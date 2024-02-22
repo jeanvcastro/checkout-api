@@ -176,7 +176,69 @@ describe("ProcessPaymentHandlers", () => {
       expect(context.paymentResponse?.status).toBe(SaleConstants.Status.APPROVED);
     });
 
-    // Add more scenarios for BANK_SLIP and PIX payment methods, including error cases
+    it("should process payment with BANK_SLIP successfully", async () => {
+      const context = {
+        ...baseContext,
+        input: {
+          ...baseContext.input,
+          paymentMethod: SaleConstants.PaymentMethod.BANK_SLIP,
+        },
+        products: [mockedProduct],
+        customer: mockedCustomer,
+      };
+
+      paymentStrategyContext.processPayment = vi.fn().mockResolvedValue({
+        status: SaleConstants.Status.PENDING,
+        paymentMethod: SaleConstants.PaymentMethod.BANK_SLIP,
+      });
+
+      const handler = new ProcessPaymentHandler(paymentStrategyContext);
+      await handler.handle(context as Context);
+
+      expect(paymentStrategyContext.processPayment).toHaveBeenCalled();
+      expect(context.paymentResponse?.status).toBe(SaleConstants.Status.PENDING);
+    });
+
+    it("should process payment with PIX successfully", async () => {
+      const context = {
+        ...baseContext,
+        input: {
+          ...baseContext.input,
+          paymentMethod: SaleConstants.PaymentMethod.PIX,
+        },
+        products: [mockedProduct],
+        customer: mockedCustomer,
+      };
+
+      paymentStrategyContext.processPayment = vi.fn().mockResolvedValue({
+        status: SaleConstants.Status.APPROVED,
+        paymentMethod: SaleConstants.PaymentMethod.PIX,
+      });
+
+      const handler = new ProcessPaymentHandler(paymentStrategyContext);
+      await handler.handle(context as Context);
+
+      expect(paymentStrategyContext.processPayment).toHaveBeenCalled();
+      expect(context.paymentResponse?.status).toBe(SaleConstants.Status.APPROVED);
+    });
+
+    it("should handle errors during payment process", async () => {
+      const context = {
+        ...baseContext,
+        input: {
+          ...baseContext.input,
+          paymentMethod: SaleConstants.PaymentMethod.CREDIT_CARD,
+        },
+        products: [mockedProduct],
+        customer: mockedCustomer,
+      };
+
+      const errorMessage = "Payment processing error";
+      paymentStrategyContext.processPayment = vi.fn().mockRejectedValue(new Error(errorMessage));
+
+      const handler = new ProcessPaymentHandler(paymentStrategyContext);
+      await expect(handler.handle(context as Context)).rejects.toThrow(errorMessage);
+    });
   });
 
   describe("SetSaleHandler", () => {
@@ -204,7 +266,24 @@ describe("ProcessPaymentHandlers", () => {
       expect(salesRepository.create).toHaveBeenCalled();
     });
 
-    // Add more scenarios for updating an existing sale, including error cases
+    it("should update an existing sale", async () => {
+      salesRepository.findByProductsAndCustomer = vi.fn().mockResolvedValue(mockedSale);
+      salesRepository.update = vi.fn().mockResolvedValue({ ...mockedSale, attempts: mockedSale.attempts + 1 });
+
+      const handler = new SetSaleHandler(salesRepository);
+      const context = {
+        ...baseContext,
+        products: [mockedProduct],
+        customer: mockedCustomer,
+        sale: mockedSale,
+        paymentResponse: mockedPaymentResponse,
+      };
+
+      await handler.handle(context as Context);
+
+      expect(salesRepository.update).toHaveBeenCalled();
+      expect(context.sale?.attempts).toBeGreaterThan(1);
+    });
   });
 
   describe("SendNotificationHandler", () => {
