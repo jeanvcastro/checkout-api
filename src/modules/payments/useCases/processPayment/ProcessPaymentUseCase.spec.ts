@@ -1,3 +1,4 @@
+import { type QueueManager } from "@/core/QueueManager";
 import { Customer } from "@/core/domain/entities/Customer";
 import { Product } from "@/core/domain/entities/Product";
 import { Sale, SaleConstants } from "@/core/domain/entities/Sale";
@@ -17,6 +18,7 @@ describe("ProcessPaymentUseCase", () => {
 
   let mockedPaymentResponse: PaymentResponse;
   let paymentStrategyContext: PaymentStrategyContext;
+  let queueManager: QueueManager;
 
   let mockedProduct: Product;
   let mockedCustomer: Customer;
@@ -72,6 +74,12 @@ describe("ProcessPaymentUseCase", () => {
       setStrategy: vi.fn(),
       processPayment: vi.fn().mockResolvedValue(mockedPaymentResponse),
     };
+
+    queueManager = {
+      register: vi.fn(),
+      enqueue: vi.fn(),
+      dequeue: vi.fn(),
+    };
   });
 
   it("should successfully process a payment", async () => {
@@ -98,6 +106,7 @@ describe("ProcessPaymentUseCase", () => {
       productsRepository,
       salesRepository,
       paymentStrategyContext,
+      queueManager,
     );
 
     const result = await sut.execute(input);

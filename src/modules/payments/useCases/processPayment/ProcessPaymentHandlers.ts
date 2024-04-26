@@ -1,3 +1,4 @@
+import { type QueueManager } from "@/core/QueueManager";
 import { Customer } from "@/core/domain/entities/Customer";
 import { Sale, SaleConstants } from "@/core/domain/entities/Sale";
 import { RequiredParameterException } from "@/core/domain/errors/RequiredParameterException";
@@ -7,6 +8,7 @@ import { type SalesRepository } from "@/core/domain/repositories/SalesRepository
 import { InstallmentCalculator } from "@/core/domain/valueObjects/InstallmentCalculator";
 import { PaymentHandler, type Context } from "@/core/services/Payment/PaymentHandler";
 import { type PaymentRequest, type PaymentStrategyContext } from "@/core/services/Payment/PaymentStrategy";
+import SendNotificationJob from "@/infra/jobs/SendNotificationJob";
 import { AntiFraudRuleViolationException } from "@/modules/payments/errors/AntiFraudRuleViolationException";
 import { InvalidInstallmentsException } from "@/modules/payments/errors/InvalidInstallmentsException";
 
@@ -201,6 +203,21 @@ export class SetSaleHandler extends PaymentHandler {
     }
 
     context.sale = sale;
+
+    await super.handle(context);
+  }
+}
+
+export class SendNotificationHandler extends PaymentHandler {
+  constructor(private readonly queueManager: QueueManager) {
+    super();
+  }
+
+  async handle(context: Context): Promise<void> {
+    this.queueManager.enqueue(SendNotificationJob.name, {
+      name: context.customer.name,
+      email: context.customer.email,
+    });
 
     await super.handle(context);
   }

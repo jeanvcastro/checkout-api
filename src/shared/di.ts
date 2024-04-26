@@ -1,15 +1,19 @@
+import { type QueueManager } from "@/core/QueueManager";
 import { type CustomersRepository } from "@/core/domain/repositories/CustomersRepository";
 import { type ProductsRepository } from "@/core/domain/repositories/ProductsRepository";
 import { type SalesRepository } from "@/core/domain/repositories/SalesRepository";
 import { type EmailService } from "@/core/services/EmailService";
+import type Logger from "@/core/services/Logger";
 import { type PDFService } from "@/core/services/PDFService";
 import { type PaymentStrategyContext } from "@/core/services/Payment/PaymentStrategy";
 import type StorageService from "@/core/services/StorageService";
 import type TemplateService from "@/core/services/TemplateService";
+import BullQueueManager from "@/infra/queue/BullQueueManager";
 import { SequelizeCustomersRepository } from "@/infra/repositories/SequelizeCustomersRepository";
 import { SequelizeProductsRepository } from "@/infra/repositories/SequelizeProductsRepository";
 import { SequelizeSalesRepository } from "@/infra/repositories/SequelizeSalesRepository";
 import SESEmailService from "@/infra/services/Email/SESEmailService";
+import WinstonLogger from "@/infra/services/Logger/WinstonLogger";
 import WeasyPrintPDFService from "@/infra/services/PDF/WeasyprintPDFService";
 import { LocalStorageService } from "@/infra/services/Storage/LocalStorageService";
 import HandlebarsTemplateService from "@/infra/services/Template/HandlebarsTemplateService";
@@ -21,6 +25,8 @@ interface Dependencies {
   ProductsRepository: ProductsRepository;
   SalesRepository: SalesRepository;
   // services
+  Logger: Logger;
+  QueueManager: QueueManager;
   TemplateService: TemplateService;
   EmailService: EmailService;
   PaymentStrategyContext: PaymentStrategyContext;
@@ -49,6 +55,8 @@ export default function configureDI() {
   container.add("ProductsRepository", () => new SequelizeProductsRepository());
   container.add("SalesRepository", () => new SequelizeSalesRepository());
 
+  container.add("Logger", () => new WinstonLogger());
+  container.add("QueueManager", ({ Logger }) => new BullQueueManager(Logger));
   container.add("TemplateService", () => new HandlebarsTemplateService());
   container.add("EmailService", ({ TemplateService }) => new SESEmailService(TemplateService));
   container.add("PDFService", () => new WeasyPrintPDFService());
