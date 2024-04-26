@@ -17,7 +17,13 @@ import WinstonLogger from "@/infra/services/Logger/WinstonLogger";
 import WeasyPrintPDFService from "@/infra/services/PDF/WeasyprintPDFService";
 import { LocalStorageService } from "@/infra/services/Storage/LocalStorageService";
 import HandlebarsTemplateService from "@/infra/services/Template/HandlebarsTemplateService";
+import { ProcessPaymentController } from "@/modules/payments/useCases/processPayment/ProcessPaymentController";
 import { ProcessPaymentStrategyContext } from "@/modules/payments/useCases/processPayment/ProcessPaymentStrategyContext";
+import { ProcessPaymentUseCase } from "@/modules/payments/useCases/processPayment/ProcessPaymentUseCase";
+import { DownloadBankslipController } from "@/modules/sales/useCases/downloadBankslip/DownloadBankslipController";
+import { DownloadBankslipUseCase } from "@/modules/sales/useCases/downloadBankslip/DownloadBankslipUseCase";
+import { ShowSaleController } from "@/modules/sales/useCases/showSale/ShowSaleController";
+import { ShowSaleUseCase } from "@/modules/sales/useCases/showSale/ShowSaleUseCase";
 
 interface Dependencies {
   // repositories
@@ -32,6 +38,14 @@ interface Dependencies {
   PaymentStrategyContext: PaymentStrategyContext;
   PDFService: PDFService;
   StorageService: StorageService;
+  // use cases
+  ProcessPaymentUseCase: ProcessPaymentUseCase;
+  ShowSaleUseCase: ShowSaleUseCase;
+  DownloadBankslipUseCase: DownloadBankslipUseCase;
+  // controllers
+  ProcessPaymentController: ProcessPaymentController;
+  ShowSaleController: ShowSaleController;
+  DownloadBankslipController: DownloadBankslipController;
 }
 
 type Factory<T> = (dependencies: Dependencies) => T;
@@ -62,6 +76,34 @@ export default function configureDI() {
   container.add("PDFService", () => new WeasyPrintPDFService());
   container.add("StorageService", () => new LocalStorageService());
   container.add("PaymentStrategyContext", () => new ProcessPaymentStrategyContext());
+
+  container.add(
+    "ProcessPaymentUseCase",
+    ({ CustomersRepository, ProductsRepository, SalesRepository, PaymentStrategyContext, QueueManager }) =>
+      new ProcessPaymentUseCase(
+        CustomersRepository,
+        ProductsRepository,
+        SalesRepository,
+        PaymentStrategyContext,
+        QueueManager,
+      ),
+  );
+  container.add("ShowSaleUseCase", ({ SalesRepository }) => new ShowSaleUseCase(SalesRepository));
+  container.add(
+    "DownloadBankslipUseCase",
+    ({ SalesRepository, StorageService, TemplateService, PDFService }) =>
+      new DownloadBankslipUseCase(SalesRepository, StorageService, TemplateService, PDFService),
+  );
+
+  container.add(
+    "ProcessPaymentController",
+    ({ ProcessPaymentUseCase, Logger }) => new ProcessPaymentController(ProcessPaymentUseCase, Logger),
+  );
+  container.add("ShowSaleController", ({ ShowSaleUseCase, Logger }) => new ShowSaleController(ShowSaleUseCase, Logger));
+  container.add(
+    "DownloadBankslipController",
+    ({ DownloadBankslipUseCase, Logger }) => new DownloadBankslipController(DownloadBankslipUseCase, Logger),
+  );
 
   return container;
 }

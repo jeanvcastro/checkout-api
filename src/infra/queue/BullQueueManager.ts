@@ -1,6 +1,10 @@
 import { type Processor, type Queue, type QueueManager } from "@/core/QueueManager";
 import type Logger from "@/core/services/Logger";
+import { createBullBoard } from "@bull-board/api";
+import { BullAdapter } from "@bull-board/api/bullAdapter";
+import { ExpressAdapter } from "@bull-board/express";
 import { Queue as BullmqQueue, Worker, type Job as BullmqJob } from "bullmq";
+import { type Router } from "express";
 import { JobProcessorNotFoundException } from "./errors/JobProcessorNotFoundException";
 
 const connection = {
@@ -90,3 +94,14 @@ export default class BullQueueManager implements QueueManager {
     Object.values(this.workers).forEach(async (worker) => await worker.run());
   }
 }
+
+const bullBoardUrl = `/queues/${process.env.BULL_ACCESS_KEY}`;
+const expressAdapter = new ExpressAdapter();
+expressAdapter.setBasePath(bullBoardUrl);
+createBullBoard({
+  queues: Object.values(queues).map((queue) => new BullAdapter(queue)),
+  serverAdapter: expressAdapter,
+});
+const bullBoardRouter = expressAdapter.getRouter() as Router;
+
+export { bullBoardRouter, bullBoardUrl };
