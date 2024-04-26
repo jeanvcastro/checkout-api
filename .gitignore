@@ -1,0 +1,11 @@
+.DS_Store
+.vscode
+*.log
+
+dist
+node_modules
+
+.env
+
+logs
+src/infra/storage
